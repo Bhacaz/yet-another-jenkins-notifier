@@ -37,11 +37,14 @@
     var urlForm = document.getElementById('urlForm');
     var urlInput = document.getElementById('url');
     var addButton = document.getElementById('addButton');
+    var linkButton = document.getElementById('linkButton');
     var errorMessage = document.getElementById('errorMessage');
 
     optionsLink.addEventListener('click', openOptionsPage);
     urlForm.addEventListener('submit', addUrl);
     urlForm.addEventListener('input', validateForm);
+    linkButton.addEventListener('click', addUrlByGithubDom);
+
 
     validateForm();
     placeholderRotate();
@@ -62,6 +65,33 @@
         urlInput.value = '';
       }).then(function () {
         return Jobs.updateStatus(url);
+      });
+    }
+
+    function addUrlByGithubDom() {
+      var baseJenkinsUrl = 'http://jenkins2.petalmd.com/job/Github/job/petalmd.rails/job/';
+
+      function modifyDOM() {
+        return document.body.innerHTML;
+      }
+
+      var regex = /href=".+\/tree\/(.+?)">/;
+
+      chrome.tabs.executeScript({
+        code: '(' + modifyDOM + ')();' //argument here is a string but function.toString() returns function's code
+      }, (results) => {
+        var matching = results[0].match(regex);
+        if(matching === null) { return }
+
+        var branchName = matching[1];
+        var url = baseJenkinsUrl + branchName;
+
+
+        Jobs.add(url).then(function () {
+          urlInput.value = '';
+        }).then(function () {
+          return Jobs.updateStatus(url);
+        });
       });
     }
 
